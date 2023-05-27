@@ -81,7 +81,9 @@ public class Scanner {
 
             case '/':
                 if(match('/')) {
-                    while(!isAtEnd() && peek() != '\n') advance();
+                    while (!isAtEnd() && peek() != '\n') advance();
+                } else if (match('*')) {
+                    blockComment();
                 } else {
                     addToken(SLASH);
                 }
@@ -108,6 +110,24 @@ public class Scanner {
         }
     }
 
+    private void blockComment() {
+        int depth = 1;
+        while(depth > 0 && !isAtEnd()) {
+            if(isBeginBlockComment()) {
+                depth++;
+            } else if (isEndBlockComment()) {
+                depth--;
+            }
+            if(match('\n')) {
+                line++;
+            }
+            advance();
+        }
+        if(depth > 0) {
+            Lox.error(line, "File ended during comment block");
+            return;
+        }
+    }
 
     private void identifier() {
         while(isAlphaNumberic(peek())) advance();
@@ -203,5 +223,13 @@ public class Scanner {
         String text = subString();
         Token tok = new Token(type, text, literal, line);
         tokens.add(tok);
+    }
+
+    private boolean isBeginBlockComment() {
+        return match('/') && peek() == '*';
+    }
+
+    private boolean isEndBlockComment() {
+        return match('*') && peek() == '/';
     }
 }
